@@ -38,4 +38,13 @@ public class CardsManager : MonoBehaviour
 
         SelectedCards.Clear();
     }
+
+    public List<GameObject> DrawCards(int carsToSpawn)
+    {
+        List<GameObject> cards = new();
+        int cardIndex = Random.Range(0, temp.Count);
+        GameObject newCard = Instantiate(temp[cardIndex], handContainer);
+        temp.Remove(newCard);
+        return cards;
+    }
 }
