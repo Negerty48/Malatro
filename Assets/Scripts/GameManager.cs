@@ -1,6 +1,5 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,6 +11,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject scoreBoard;
     [SerializeField] private GameObject playedConatainer;
     [SerializeField] private CardsManager cardsManager;
+    private Dictionary<string, int> handChips = new Dictionary<string, int>();
     private string blind = "Small";
     void Start()
     {
@@ -20,30 +20,69 @@ public class GameManager : MonoBehaviour
         Vector2 pos = panel.offsetMax;
         pos.y = -200;
         panel.offsetMax = pos;
+
+        SetDictionary(handChips);
     }        
 
     public void Play()
     {
-        Dictionary<string, int> handChips = new Dictionary<string, int>();
-        List<Card> cards = cardsManager.SelectedCards;
-        TextMeshProUGUI roundScore = scoreBoard.gameObject.transform.Find("RoundScore/Score").GetComponent<TextMeshProUGUI>();
-        TextMeshProUGUI handPlayed = scoreBoard.gameObject.transform.Find("HandScore/HandPlayed").GetComponent<TextMeshProUGUI>();
-        TextMeshProUGUI chipsCount = scoreBoard.gameObject.transform.Find("HandScore/Chips/Text").GetComponent<TextMeshProUGUI>();
-        TextMeshProUGUI handCountText = scoreBoard.gameObject.transform.Find("RoundInfo/Hands/Number").GetComponent<TextMeshProUGUI>();
+        TextMeshProUGUI roundScore = scoreBoard.transform.Find("RoundScore/Score").GetComponent<TextMeshProUGUI>();
+        TextMeshProUGUI handPlayed = scoreBoard.transform.Find("HandScore/HandPlayed").GetComponent<TextMeshProUGUI>();
+        TextMeshProUGUI chipsCount = scoreBoard.transform.Find("HandScore/Chips/Text").GetComponent<TextMeshProUGUI>();
+        TextMeshProUGUI multiCount = scoreBoard.transform.Find("HandScore/Multi/Text").GetComponent<TextMeshProUGUI>();
+        TextMeshProUGUI handCountText = scoreBoard.transform.Find("RoundInfo/Hands/Number").GetComponent<TextMeshProUGUI>();
         int.TryParse(handCountText.text, out int handCount);
 
-        for (int i = 0; i < cards.Count; i++)
+        if (handCount > 1)
         {
-            Debug.Log(cards[i].gameObject.name);
+            cardsManager.PlaySelectedCards();
+            List<GameObject> playedCards = GetCardsPlayed(cardsManager.playedContainer);
+            List<CardParser> cards = GetCardsParsed(playedCards);
+
+            string hand = HandEvaluator(cards);
+            handPlayed.text = hand.ToUpper();
+
+            SetChipsAndMulti(hand, chipsCount, multiCount, cards);
+
+            handCount--;
+            handCountText.text = handCount.ToString();
+
+            SetRoundScore(roundScore, chipsCount, multiCount);
+            cardsManager.DrawCards(cards.Count);
+            foreach (GameObject card in playedCards)
+            {
+                Destroy(card);
+            }
+        } else
+        {
+            TextMeshProUGUI scoreAtLeast = scoreBoard.gameObject.transform.Find("ScoreAtLeast/BlindInfo/ScoreAtLeast/Score").GetComponent<TextMeshProUGUI>();
+
+            if (int.Parse(roundScore.text) < int.Parse(scoreAtLeast.text))
+            {
+
+            } else { 
+
+            }
         }
-        SetDictionary(handChips);
-        cardsManager.PlaySelectedCards();
-        string hand = HandEvaluator(cards);
-        handPlayed.text = hand.ToUpper();
-        chipsCount.text = handChips[hand].ToString();
-        handCount--;
-        handCountText.text = handCount.ToString();
-    }    
+    }
+
+    public void Discard()
+    {
+        List<GameObject> cards = cardsManager.SelectedCards;
+        TextMeshProUGUI discardsCountText = scoreBoard.transform.Find("RoundInfo/Discards/Number").GetComponent<TextMeshProUGUI>();
+        int.TryParse(discardsCountText.text, out int dicardsCount);
+
+        if (dicardsCount > 0 && handContainer.transform.childCount > 9)
+        {
+            dicardsCount--;
+            discardsCountText.text = dicardsCount.ToString();
+            foreach (GameObject card in cards)
+            {
+                Destroy(card);
+            }
+            cardsManager.DrawCards(cards.Count);
+        }
+    }
 
     public void SetDictionary(Dictionary<string, int> handChips)
     {
@@ -58,74 +97,149 @@ public class GameManager : MonoBehaviour
         handChips.Add("Escalera De Color", 100);        
     }
 
-    public string HandEvaluator(List<Card> cards)
+    public void SetRoundScore(TextMeshProUGUI roundScoreTxt, TextMeshProUGUI chipsCount, TextMeshProUGUI multiCount)
     {
-        var parsed = ParseSelectedCards(cards);
+        int.TryParse(chipsCount.text, out int chips);
+        int.TryParse(multiCount.text, out int multi);
+        int.TryParse(roundScoreTxt.text, out int roundScore);
 
-        if (parsed.Count == 0)
-            return "No cards selected";
+        int handChips = chips * multi;
+        roundScore += handChips;
+        roundScoreTxt.text = roundScore.ToString();
+    }
 
-        // Tratar el As (1) como 14 para la mayoría de los casos
-        List<int> values = parsed.Select(c => c.Value == 1 ? 14 : c.Value).OrderBy(v => v).ToList();
-        var suits = parsed.Select(c => c.Suit).ToList();
+    public void SetChipsAndMulti(string hand, TextMeshProUGUI chipsCount, TextMeshProUGUI multiCount, List<CardParser> cards)
+    {
+        int.TryParse(chipsCount.text, out int chips);
+        chipsCount.text = handChips[hand].ToString();        
 
-        bool isFlush = suits.Distinct().Count() == 1;
-        bool isStraight = values.Distinct().Count() == parsed.Count &&
-                          values.Max() - values.Min() == parsed.Count - 1;
-
-        // Comprobar escalera baja A-2-3-4-5 (As como 1)
-        if (parsed.Any(c => c.Value == 1))
+        foreach (CardParser card in cards)
         {
-            var alt = parsed.Select(c => c.Value).ToList(); // usar As como 1
-            alt = alt.OrderBy(v => v).ToList();
-            if (alt.Distinct().Count() == parsed.Count &&
-                alt.Max() - alt.Min() == parsed.Count - 1)
+            if (card.Value == 1)
             {
-                isStraight = true;
-                values = alt; // usar esta para comparar grupos
-            }
+                chips += card.Value + 10;
+            } else
+            {
+                chips = card.Value;
+            }                
         }
 
-        var groups = values.GroupBy(v => v).Select(g => g.Count()).OrderByDescending(c => c).ToList();
+        chips = chips + handChips[hand];
+        chipsCount.text = chips.ToString();
+        
+        if (hand.Equals("Carta Alta")) {
+            multiCount.text = "1";
+        } else if (hand.Equals("Pareja") || hand.Equals("Doble Pareja")) {
+            multiCount.text = "2";
+        } else if (hand.Equals("Trio")) {
+            multiCount.text = "3";
+        } else if (hand.Equals("Escalera") || hand.Equals("Color") || hand.Equals("Full")) {
+            multiCount.text = "4";
+        } else if (hand.Equals("Poker")) {
+            multiCount.text = "7";
+        } else {
+            multiCount.text = "8";
+        }
+    }    
 
-        if (isFlush && isStraight) return "Escalera De Color";
-        if (groups.Contains(4)) return "Poker";
-        if (groups.Contains(3) && groups.Contains(2)) return "Full";
-        if (isFlush) return "Color";
-        if (isStraight) return "Escalera";
-        if (groups.Contains(3)) return "Trio";
-        if (groups.Count(c => c == 2) == 2) return "Doble Pareja";
-        if (groups.Contains(2)) return "Pareja";
+    public List<GameObject> GetCardsPlayed(Transform playedCards)
+    {
+        List<GameObject> childs = new List<GameObject>();
+        Transform parent = playedCards.transform;
+        foreach (Transform child in parent)
+        {
+            childs.Add(child.gameObject);
+        }
+        return childs;
+    }
 
+    public string HandEvaluator(List<CardParser> cards)
+    {
+        bool color;
+        bool escalera;
+
+        color = CheckColor(cards);
+        escalera = CheckEscalera(cards);
+
+        if (color && escalera)
+        {
+            return "Escalera De Color";
+        }
+        else if (color)
+        {
+            return "Color";
+        }
+        else if (escalera) 
+        {
+            return "Escalera";
+        } else
+        {
+            return CheckValues(cards);
+        }
+    }    
+
+    public string CheckValues(List<CardParser> cards)
+    {
         return "Carta Alta";
     }
 
-    public static List<CardParser> ParseSelectedCards(List<Card> selected)
+    public bool CheckEscalera(List<CardParser> cards)
     {
-        var parsed = new List<CardParser>();
+        cards.Sort();
 
-        foreach (var card in selected)
+        for (int i = 1; i < cards.Count; i++)
         {
-            Debug.Log(card.gameObject.name);
-            string cleanName = card.gameObject.name.Replace("(Clone)", "").Trim();
-            Debug.Log(cleanName);
-            string[] parts = cleanName.Split('_');
-
-            if (parts.Length == 2 && int.TryParse(parts[1], out int val))
+            if (i == 1 && cards[i].Value == 10)
             {
-                parsed.Add(new CardParser
+                if (cards[i].Value != cards[i - 1].Value + 9)
                 {
-                    Suit = parts[0],
-                    Value = val
-                });
-            }
-            else
+                    return false;
+                } else
+                {
+                    if (cards[i].Value != cards[i - 1].Value + 1)
+                    {
+                        return false;
+                    }
+                }
+            } else
             {
-                Debug.LogWarning("Formato de carta no válido: " + card.name);
+                if (cards[i].Value != cards[i - 1].Value + 1)
+                {
+                    return false;
+                }
             }
         }
+        return true;
+    }
 
-        return parsed;
+    public bool CheckColor(List<CardParser> cards)
+    {      
+        string suit = "";
+        if (cards.Count == 5) {
+            for (int i = 0; i < cards.Count; i++)
+            {
+                if (i == 0) {
+                    suit = cards[i].Suit;
+                } else {
+                    if (!cards[i].Suit.Equals(suit)) {
+                        return false;
+                    }
+                }
+            }
+        } else return false;
+        return true;
+    }
+
+    public List<CardParser> GetCardsParsed(List<GameObject> selectedCards)
+    {
+        List<CardParser> cards = new();
+        foreach (GameObject card in selectedCards)
+        {
+            string name = card.name.Replace("(Clone)", "").Trim();
+            string[] parts = name.Split("_");
+            cards.Add(new CardParser(parts[0], int.Parse(parts[1])));
+        }
+        return cards;
     }
 
     public void SelectBlind()
@@ -134,6 +248,7 @@ public class GameManager : MonoBehaviour
         blinds.gameObject.SetActive(false);
         handContainer.SetActive(true);
         ChangePositionBlindsPanel();
+        cardsManager.DrawCards(9);
     }    
 
     private void ChangePositionBlindsPanel()

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnityEditor.Rendering;
 using UnityEngine;
 
 public class CardsManager : MonoBehaviour
@@ -8,20 +7,11 @@ public class CardsManager : MonoBehaviour
     public Transform playedContainer;
     public List<GameObject> cards;
     private List<GameObject> temp;
-    public List<Card> SelectedCards = new();
-
-    [Header("Test")]
-    public int initialHandCount = 10;
+    public List<GameObject> SelectedCards = new();
 
     void Start()
     {
-        temp = cards;
-        for (int i = 0; i < initialHandCount; i++)
-        {
-            int cardIndex = Random.Range(0, temp.Count);
-            GameObject newCard = Instantiate(temp[cardIndex], handContainer);
-            temp.Remove(newCard);
-        }
+        temp = cards;        
     }
 
     public void PlaySelectedCards()
@@ -29,9 +19,9 @@ public class CardsManager : MonoBehaviour
         if (SelectedCards.Count == 0)
             return;
 
-        foreach (Card card in new List<Card>(SelectedCards))
+        foreach (GameObject card in new List<GameObject>(SelectedCards))
         {
-            card.Deselect();
+            card.GetComponent<Card>().Deselect();
             card.transform.SetParent(playedContainer, false);
             card.transform.SetSiblingIndex(playedContainer.childCount);
         }
@@ -42,9 +32,12 @@ public class CardsManager : MonoBehaviour
     public List<GameObject> DrawCards(int carsToSpawn)
     {
         List<GameObject> cards = new();
-        int cardIndex = Random.Range(0, temp.Count);
-        GameObject newCard = Instantiate(temp[cardIndex], handContainer);
-        temp.Remove(newCard);
+        for (int i = 0; i < carsToSpawn; i++) 
+        {
+            int cardIndex = Random.Range(0, temp.Count);
+            GameObject newCard = Instantiate(temp[cardIndex], handContainer);            
+            temp.Remove(newCard);
+        }
         return cards;
     }
 }

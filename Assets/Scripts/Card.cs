@@ -29,7 +29,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDra
         {
             if (manager.SelectedCards.Count >= 5) return;
             IsSelected = true;
-            manager.SelectedCards.Add(this);
+            manager.SelectedCards.Add(this.gameObject);
             faceTransform.DOAnchorPosY(selectionOffset, 0.2f).SetEase(Ease.OutBack);
         }
         else
@@ -42,7 +42,7 @@ public class Card : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDra
     {
         IsSelected = false;
         var manager = FindObjectOfType<CardsManager>();
-        manager.SelectedCards.Remove(this);
+        manager.SelectedCards.Remove(this.gameObject);
         faceTransform.DOAnchorPos(new Vector2(0f, 0f), 0.2f).SetEase(Ease.OutBack);
     }
 
