@@ -60,14 +60,18 @@ public class Card : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDra
     public void OnEndDrag(PointerEventData eventData)
     {
         canvasGroup.blocksRaycasts = true;
+
         Transform parent = transform.parent;
         int newIndex = parent.childCount;
 
         for (int i = 0; i < parent.childCount; i++)
         {
-            if (transform == parent.GetChild(i)) continue;
+            Transform sibling = parent.GetChild(i);
+            if (sibling == transform) continue;
 
-            if (transform.position.x < parent.GetChild(i).position.x)
+            float siblingMidX = sibling.position.x + sibling.GetComponent<RectTransform>().rect.width * 0.5f;
+
+            if (transform.position.x < siblingMidX)
             {
                 newIndex = i;
                 break;
@@ -75,6 +79,8 @@ public class Card : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDra
         }
 
         transform.SetSiblingIndex(newIndex);
-        ((RectTransform)transform).anchoredPosition = Vector2.zero;
+
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate((RectTransform)parent);
     }
 }
