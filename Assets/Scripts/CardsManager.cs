@@ -5,13 +5,18 @@ public class CardsManager : MonoBehaviour
 {
     public Transform handContainer;
     public Transform playedContainer;
-    public List<GameObject> cards;
-    private List<GameObject> temp;
+    public List<GameObject> deck;
+    public List<GameObject> temp;
     public List<GameObject> SelectedCards = new();
 
     void Start()
     {
-        temp = cards;        
+        SetDeck();      
+    }
+
+    public void SetDeck()
+    {
+        temp = new List<GameObject>(deck);
     }
 
     public void PlaySelectedCards()
@@ -37,8 +42,15 @@ public class CardsManager : MonoBehaviour
             int cardIndex = Random.Range(0, temp.Count);
             GameObject newCard = Instantiate(temp[cardIndex], handContainer);
             temp.Remove(temp[cardIndex]);
-            Debug.Log(temp.Count);
         }
         return cards;
+    }
+
+    public void DeleteCards()
+    {
+        foreach (Transform child in handContainer.transform)
+        {
+            Destroy(child.gameObject);
+        }
     }
 }

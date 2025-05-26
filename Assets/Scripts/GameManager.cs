@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,8 +11,21 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject scoreBoard;
     [SerializeField] private GameObject playedConatainer;
     [SerializeField] private CardsManager cardsManager;
+    [SerializeField] private GameObject gameOverPanel;
+    [SerializeField] private GameObject canvas;
+    [SerializeField] private GameObject menuManager;
+    TextMeshProUGUI scoreAtLeast;
+    TextMeshProUGUI roundScore;
+    TextMeshProUGUI handPlayed;
+    TextMeshProUGUI chipsCount;
+    TextMeshProUGUI multiCount;
+    TextMeshProUGUI handCountText;
+    TextMeshProUGUI discardCountText;
+    TextMeshProUGUI roundText;
     private Dictionary<string, int> handChips = new Dictionary<string, int>();
     private string blind = "Small";
+    private int round = 0;
+    private int handCount;
     void Start()
     {
         RectTransform panel = blinds.transform.Find(blind).gameObject.GetComponent<RectTransform>();
@@ -23,18 +35,20 @@ public class GameManager : MonoBehaviour
         panel.offsetMax = pos;
 
         SetDictionary(handChips);
+
+        scoreAtLeast = scoreBoard.gameObject.transform.Find("ScoreAtLeast/BlindInfo/ScoreAtLeast/Score").GetComponent<TextMeshProUGUI>();
+        roundScore = scoreBoard.transform.Find("RoundScore/Score").GetComponent<TextMeshProUGUI>();
+        handPlayed = scoreBoard.transform.Find("HandScore/HandPlayed").GetComponent<TextMeshProUGUI>();
+        chipsCount = scoreBoard.transform.Find("HandScore/Chips/Text").GetComponent<TextMeshProUGUI>();
+        multiCount = scoreBoard.transform.Find("HandScore/Multi/Text").GetComponent<TextMeshProUGUI>();
+        handCountText = scoreBoard.transform.Find("RoundInfo/Hands/Number").GetComponent<TextMeshProUGUI>();
+        discardCountText = scoreBoard.transform.Find("RoundInfo/Discards/Number").GetComponent<TextMeshProUGUI>();
+        handCount = int.Parse(handCountText.text);
+        roundText = scoreBoard.transform.Find("RoundInfo/Round/Number").GetComponent<TextMeshProUGUI>();
     }        
 
     public void Play()
-    {
-        TextMeshProUGUI scoreAtLeast = scoreBoard.gameObject.transform.Find("ScoreAtLeast/BlindInfo/ScoreAtLeast/Score").GetComponent<TextMeshProUGUI>();
-        TextMeshProUGUI roundScore = scoreBoard.transform.Find("RoundScore/Score").GetComponent<TextMeshProUGUI>();
-        TextMeshProUGUI handPlayed = scoreBoard.transform.Find("HandScore/HandPlayed").GetComponent<TextMeshProUGUI>();
-        TextMeshProUGUI chipsCount = scoreBoard.transform.Find("HandScore/Chips/Text").GetComponent<TextMeshProUGUI>();
-        TextMeshProUGUI multiCount = scoreBoard.transform.Find("HandScore/Multi/Text").GetComponent<TextMeshProUGUI>();
-        TextMeshProUGUI handCountText = scoreBoard.transform.Find("RoundInfo/Hands/Number").GetComponent<TextMeshProUGUI>();
-        int.TryParse(handCountText.text, out int handCount);
-
+    {        
         if (handCount > 1)
         {
             cardsManager.PlaySelectedCards();
@@ -54,11 +68,12 @@ public class GameManager : MonoBehaviour
             {
                 Destroy(card);
             }
-            
-            //if (int.Parse(roundScore.text) >= int.Parse(scoreAtLeast.text))
-            //{
-            //    NextBlind();
-            //}
+
+            if (int.Parse(roundScore.text) >= int.Parse(scoreAtLeast.text))
+            {
+                NextBlind();
+                return;
+            }
 
             cardsManager.DrawCards(cards.Count);
         } else
@@ -81,16 +96,81 @@ public class GameManager : MonoBehaviour
                 Destroy(card);
             }
 
-            //if (int.Parse(roundScore.text) >= int.Parse(scoreAtLeast.text))
-            //{
-            //    NextBlind();
-            //} else
-            //{
-            //    GameOver();
-            //}
-
-            cardsManager.DrawCards(cards.Count);
+            if (int.Parse(roundScore.text) >= int.Parse(scoreAtLeast.text))
+            {
+                NextBlind();
+            }
+            else
+            {
+                GameOver();
+            }            
         }
+    }
+
+    public void NextBlind()
+    {        
+        ResetForPlay();
+        cardsManager.SetDeck();
+        cardsManager.DeleteCards();
+        handContainer.SetActive(false);        
+        blinds.gameObject.SetActive(true);        
+    }
+
+    public void GameOver()
+    {
+        ResetForPlay();
+        cardsManager.SetDeck();
+        cardsManager.DeleteCards();
+        handContainer.SetActive(false);
+        blinds.gameObject.SetActive(false);
+        gameOverPanel.SetActive(true);
+    }
+
+    public void PlayAgain()
+    {
+        gameOverPanel.SetActive(false);
+        blinds.gameObject.SetActive(true);
+    }
+
+    public void ExitToMenu()
+    {
+        gameOverPanel.SetActive(false);
+        blinds.gameObject.SetActive(true);
+        canvas.SetActive(false);
+        menuManager.SetActive(true);
+    }
+
+    public void ResetForPlay()
+    {
+        roundScore.text = "";
+        handPlayed.text = "";
+        chipsCount.text = "";
+        multiCount.text = "";
+        handCountText.text = "4";
+        discardCountText.text = "3";
+
+        RectTransform scoreAtLeast = scoreBoard.gameObject.transform.Find("ScoreAtLeast").GetComponent<RectTransform>();
+        TextMeshProUGUI blindText = scoreAtLeast.transform.Find("BlindText/Text").GetComponent<TextMeshProUGUI>();
+        UnityEngine.UI.Image blindImage = scoreAtLeast.gameObject.transform.Find("BlindInfo/Chip").GetComponent<UnityEngine.UI.Image>();
+        TextMeshProUGUI blindScore = scoreAtLeast.gameObject.transform.Find("BlindInfo/ScoreAtLeast/Score").GetComponent<TextMeshProUGUI>();
+        TextMeshProUGUI blindReward = scoreAtLeast.gameObject.transform.Find("BlindInfo/ScoreAtLeast/Reward").GetComponent<TextMeshProUGUI>();
+        TextMeshProUGUI blindTextReward = scoreAtLeast.gameObject.transform.Find("BlindInfo/ScoreAtLeast/TextReward").GetComponent<TextMeshProUGUI>();
+        UnityEngine.UI.Image blindChipScore = scoreAtLeast.gameObject.transform.Find("BlindInfo/ScoreAtLeast/Chip").GetComponent<UnityEngine.UI.Image>();
+        TextMeshProUGUI reward = scoreBoard.transform.Find("RoundInfo/Bank/Money").GetComponent<TextMeshProUGUI>();
+        if (blindReward)
+        {
+            reward.text = blindReward.text;
+        }
+        blindText.text = "";
+        blindImage.sprite = null;
+        blindImage.gameObject.SetActive(false);
+        blindScore.text = "";
+        blindReward.text = "";
+        blindTextReward.gameObject.SetActive(false);
+        blindChipScore.gameObject.SetActive(false);
+
+        round++;
+        roundText.text = round.ToString();
     }
 
     public void Discard()
@@ -138,36 +218,67 @@ public class GameManager : MonoBehaviour
     public void SetChipsAndMulti(string hand, TextMeshProUGUI chipsCount, TextMeshProUGUI multiCount, List<CardParser> cards)
     {
         int.TryParse(chipsCount.text, out int chips);
-        chipsCount.text = handChips[hand].ToString();        
 
-        foreach (CardParser card in cards)
+        if (hand.Equals("Carta Alta"))
         {
-            if (card.Value == 1)
-            {
-                chips += card.Value + 10;
-            } else
-            {
-                chips = card.Value;
-            }                
-        }
-
-        chips = chips + handChips[hand];
-        chipsCount.text = chips.ToString();
-        
-        if (hand.Equals("Carta Alta")) {
+            chips = cards.Max(c => c.Value) + handChips[hand];
+            chipsCount.text = chips.ToString();
             multiCount.text = "1";
-        } else if (hand.Equals("Pareja") || hand.Equals("Doble Pareja")) {
+        }
+        else if (hand.Equals("Pareja"))
+        {
+            chips = SumByGroup(cards, 2) + handChips[hand];
+            chipsCount.text = chips.ToString();
             multiCount.text = "2";
-        } else if (hand.Equals("Trio")) {
+        }
+        else if (hand.Equals("Doble Pareja"))
+        {
+            chips = SumMultipleGroups(cards, 2, 2) + handChips[hand];
+            chipsCount.text = chips.ToString();
+            multiCount.text = "2";
+        }
+        else if (hand.Equals("Trio"))
+        {
+            chips = SumByGroup(cards, 3) + handChips[hand];
+            chipsCount.text = chips.ToString();
             multiCount.text = "3";
-        } else if (hand.Equals("Escalera") || hand.Equals("Color") || hand.Equals("Full")) {
+        }
+        else if (hand.Equals("Escalera") || hand.Equals("Color") || hand.Equals("Full"))
+        {
+            chips = cards.Sum(c => c.Value) + handChips[hand];
+            chipsCount.text = chips.ToString();
             multiCount.text = "4";
-        } else if (hand.Equals("Poker")) {
+        }
+        else if (hand.Equals("Poker"))
+        {
+            chips = SumByGroup(cards, 4) + handChips[hand];
+            chipsCount.text = chips.ToString();
             multiCount.text = "7";
-        } else {
+        }
+        else
+        {
+            chips = cards.Sum(c => c.Value) + handChips[hand];
+            chipsCount.text = chips.ToString();
             multiCount.text = "8";
         }
-    }    
+    }
+
+    private int SumByGroup(List<CardParser> cards, int groupSize)
+    {
+        var grouped = cards.GroupBy(c => c.Value).FirstOrDefault(g => g.Count() == groupSize);
+        return grouped != null ? grouped.Sum(c => c.Value) : 0;
+    }
+
+    private static int SumMultipleGroups(List<CardParser> cards, int groupSize, int expectedGroups)
+    {
+        var pairs = cards
+            .GroupBy(c => c.Value)
+            .Where(g => g.Count() == groupSize)
+            .Take(expectedGroups)
+            .SelectMany(g => g);
+
+        return pairs.Sum(c => c.Value);
+    }
 
     public List<GameObject> GetCardsPlayed(Transform playedCards)
     {
@@ -224,29 +335,21 @@ public class GameManager : MonoBehaviour
 
     public bool CheckEscalera(List<CardParser> cards)
     {
-        cards.Sort();
+        List<int> values = cards.Select(c => c.Value).OrderBy(v => v).ToList();
 
-        for (int i = 1; i < cards.Count; i++)
+        bool isAceLowStraight = values.Contains(14) &&
+                                values.Contains(2) &&
+                                values.Contains(3) &&
+                                values.Contains(4) &&
+                                values.Contains(5);
+
+        if (isAceLowStraight)
+            return true;
+        
+        for (int i = 1; i < values.Count; i++)
         {
-            if (i == 1 && cards[i].Value == 10)
-            {
-                if (cards[i].Value != cards[i - 1].Value + 9)
-                {
-                    return false;
-                } else
-                {
-                    if (cards[i].Value != cards[i - 1].Value + 1)
-                    {
-                        return false;
-                    }
-                }
-            } else
-            {
-                if (cards[i].Value != cards[i - 1].Value + 1)
-                {
-                    return false;
-                }
-            }
+            if (values[i] != values[i - 1] + 1)
+                return false;
         }
         return true;
     }
@@ -279,10 +382,26 @@ public class GameManager : MonoBehaviour
             string[] parts = name.Split("_");
             if (char.IsLetter(parts[1][0])) 
             {
-                value = 10;
+                if (parts[1][0] == 'J') 
+                {
+                    value = 11;
+                } else if (parts[1][0] == 'Q')
+                {
+                    value = 12;
+                } else
+                {
+                    value = 13;
+                }
             } else
             {
-                value = int.Parse(parts[1]);
+                if (int.Parse(parts[1]) == 1)
+                {
+                    value = 14;
+                }
+                else
+                {
+                    value = int.Parse(parts[1]);
+                }
             }
             cards.Add(new CardParser(parts[0], value));
         }
@@ -292,9 +411,9 @@ public class GameManager : MonoBehaviour
     public void SelectBlind()
     {        
         SetScoreAtLeast();
-        blinds.gameObject.SetActive(false);
-        handContainer.SetActive(true);
         ChangePositionBlindsPanel();
+        blinds.gameObject.SetActive(false);
+        handContainer.SetActive(true);        
         cardsManager.DrawCards(9);
     }    
 
@@ -333,14 +452,14 @@ public class GameManager : MonoBehaviour
     {
         RectTransform scoreAtLeast = scoreBoard.gameObject.transform.Find("ScoreAtLeast").GetComponent<RectTransform>();
         TextMeshProUGUI blindText = scoreAtLeast.transform.Find("BlindText/Text").GetComponent<TextMeshProUGUI>();        
-        Image blindImage = scoreAtLeast.gameObject.transform.Find("BlindInfo/Chip").GetComponent<Image>();
+        UnityEngine.UI.Image blindImage = scoreAtLeast.gameObject.transform.Find("BlindInfo/Chip").GetComponent<UnityEngine.UI.Image>();
         TextMeshProUGUI blindScore = scoreAtLeast.gameObject.transform.Find("BlindInfo/ScoreAtLeast/Score").GetComponent<TextMeshProUGUI>();
         TextMeshProUGUI blindReward = scoreAtLeast.gameObject.transform.Find("BlindInfo/ScoreAtLeast/Reward").GetComponent<TextMeshProUGUI>();
-        Image blindTextReward = scoreAtLeast.gameObject.transform.Find("BlindInfo/ScoreAtLeast/TextReward").GetComponent<Image>();
-        Image blindChipScore = scoreAtLeast.gameObject.transform.Find("BlindInfo/ScoreAtLeast/Chip").GetComponent<Image>();
+        TextMeshProUGUI blindTextReward = scoreAtLeast.gameObject.transform.Find("BlindInfo/ScoreAtLeast/TextReward").GetComponent<TextMeshProUGUI>();
+        UnityEngine.UI.Image blindChipScore = scoreAtLeast.gameObject.transform.Find("BlindInfo/ScoreAtLeast/Chip").GetComponent<UnityEngine.UI.Image>();
 
         RectTransform actual = blinds.gameObject.transform.Find(blind).GetComponent<RectTransform>();
-        Image actualImage = actual.gameObject.transform.Find("Chip").GetComponent<Image>();
+        UnityEngine.UI.Image actualImage = actual.gameObject.transform.Find("Chip").GetComponent<UnityEngine.UI.Image>();
         TextMeshProUGUI actualScore = actual.gameObject.transform.Find("ScoreAtLeast/Score").GetComponent<TextMeshProUGUI>();
         TextMeshProUGUI actualReward = actual.gameObject.transform.Find("ScoreAtLeast/Reward").GetComponent<TextMeshProUGUI>();
         
@@ -348,39 +467,39 @@ public class GameManager : MonoBehaviour
         if (blind.Equals("Small"))
         {
             blindImage.gameObject.SetActive(true);
-            blindChipScore.gameObject.SetActive(true);
-            blindScore.gameObject.SetActive(true);
+            blindChipScore.gameObject.SetActive(true);            
             blindText.text = "CIEGA PEQUEÑA";
             blindImage.sprite = actualImage.sprite;
             blindScore.text = actualScore.text;
             if (actualReward)
             {
+                blindTextReward.gameObject.SetActive(true);
                 blindReward.text = actualReward.text;
             }
         }
         else if (blind.Equals("Big"))
         {
             blindImage.gameObject.SetActive(true);
-            blindChipScore.gameObject.SetActive(true);
-            blindScore.gameObject.SetActive(true);
+            blindChipScore.gameObject.SetActive(true);            
             blindText.text = "CIEGA GRANDE";
             blindImage.sprite = actualImage.sprite;
             blindScore.text = actualScore.text;
             if (actualReward)
             {
+                blindTextReward.gameObject.SetActive(true);
                 blindReward.text = actualReward.text;
             }
         }
         else
         {
             blindImage.gameObject.SetActive(true);
-            blindChipScore.gameObject.SetActive(true);
-            blindScore.gameObject.SetActive(true);
+            blindChipScore.gameObject.SetActive(true);            
             blindText.text = "JEFE";
             blindImage.sprite = actualImage.sprite;
             blindScore.text = actualScore.text;
             if (actualReward)
             {
+                blindTextReward.gameObject.SetActive(true);
                 blindReward.text = actualReward.text;
             }
         }
