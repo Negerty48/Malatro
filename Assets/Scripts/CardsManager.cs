@@ -35,8 +35,9 @@ public class CardsManager : MonoBehaviour
         for (int i = 0; i < carsToSpawn; i++) 
         {
             int cardIndex = Random.Range(0, temp.Count);
-            GameObject newCard = Instantiate(temp[cardIndex], handContainer);            
-            temp.Remove(newCard);
+            GameObject newCard = Instantiate(temp[cardIndex], handContainer);
+            temp.Remove(temp[cardIndex]);
+            Debug.Log(temp.Count);
         }
         return cards;
     }

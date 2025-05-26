@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using TMPro;
 using UnityEngine;
@@ -26,6 +27,7 @@ public class GameManager : MonoBehaviour
 
     public void Play()
     {
+        TextMeshProUGUI scoreAtLeast = scoreBoard.gameObject.transform.Find("ScoreAtLeast/BlindInfo/ScoreAtLeast/Score").GetComponent<TextMeshProUGUI>();
         TextMeshProUGUI roundScore = scoreBoard.transform.Find("RoundScore/Score").GetComponent<TextMeshProUGUI>();
         TextMeshProUGUI handPlayed = scoreBoard.transform.Find("HandScore/HandPlayed").GetComponent<TextMeshProUGUI>();
         TextMeshProUGUI chipsCount = scoreBoard.transform.Find("HandScore/Chips/Text").GetComponent<TextMeshProUGUI>();
@@ -47,22 +49,47 @@ public class GameManager : MonoBehaviour
             handCount--;
             handCountText.text = handCount.ToString();
 
-            SetRoundScore(roundScore, chipsCount, multiCount);
-            cardsManager.DrawCards(cards.Count);
+            SetRoundScore(roundScore, chipsCount, multiCount);            
             foreach (GameObject card in playedCards)
             {
                 Destroy(card);
             }
+            
+            //if (int.Parse(roundScore.text) >= int.Parse(scoreAtLeast.text))
+            //{
+            //    NextBlind();
+            //}
+
+            cardsManager.DrawCards(cards.Count);
         } else
         {
-            TextMeshProUGUI scoreAtLeast = scoreBoard.gameObject.transform.Find("ScoreAtLeast/BlindInfo/ScoreAtLeast/Score").GetComponent<TextMeshProUGUI>();
+            cardsManager.PlaySelectedCards();
+            List<GameObject> playedCards = GetCardsPlayed(cardsManager.playedContainer);
+            List<CardParser> cards = GetCardsParsed(playedCards);
 
-            if (int.Parse(roundScore.text) < int.Parse(scoreAtLeast.text))
+            string hand = HandEvaluator(cards);
+            handPlayed.text = hand.ToUpper();
+
+            SetChipsAndMulti(hand, chipsCount, multiCount, cards);
+
+            handCount--;
+            handCountText.text = handCount.ToString();
+
+            SetRoundScore(roundScore, chipsCount, multiCount);
+            foreach (GameObject card in playedCards)
             {
-
-            } else { 
-
+                Destroy(card);
             }
+
+            //if (int.Parse(roundScore.text) >= int.Parse(scoreAtLeast.text))
+            //{
+            //    NextBlind();
+            //} else
+            //{
+            //    GameOver();
+            //}
+
+            cardsManager.DrawCards(cards.Count);
         }
     }
 
@@ -72,7 +99,7 @@ public class GameManager : MonoBehaviour
         TextMeshProUGUI discardsCountText = scoreBoard.transform.Find("RoundInfo/Discards/Number").GetComponent<TextMeshProUGUI>();
         int.TryParse(discardsCountText.text, out int dicardsCount);
 
-        if (dicardsCount > 0 && handContainer.transform.childCount > 9)
+        if (dicardsCount > 0 && handContainer.transform.childCount < 9)
         {
             dicardsCount--;
             discardsCountText.text = dicardsCount.ToString();
@@ -180,6 +207,18 @@ public class GameManager : MonoBehaviour
 
     public string CheckValues(List<CardParser> cards)
     {
+        var valueCounts = cards
+        .GroupBy(c => c.Value)
+        .Select(g => g.Count())
+        .OrderByDescending(c => c)
+        .ToList();
+        
+        if (valueCounts.Contains(4)) return "Poker";
+        if (valueCounts.Contains(3) && valueCounts.Contains(2)) return "Full";
+        if (valueCounts.Contains(3)) return "Trio";
+        if (valueCounts.Count(c => c == 2) == 2) return "Doble Pareja";
+        if (valueCounts.Contains(2)) return "Pareja";
+
         return "Carta Alta";
     }
 
@@ -233,11 +272,19 @@ public class GameManager : MonoBehaviour
     public List<CardParser> GetCardsParsed(List<GameObject> selectedCards)
     {
         List<CardParser> cards = new();
+        int value;
         foreach (GameObject card in selectedCards)
         {
             string name = card.name.Replace("(Clone)", "").Trim();
             string[] parts = name.Split("_");
-            cards.Add(new CardParser(parts[0], int.Parse(parts[1])));
+            if (char.IsLetter(parts[1][0])) 
+            {
+                value = 10;
+            } else
+            {
+                value = int.Parse(parts[1]);
+            }
+            cards.Add(new CardParser(parts[0], value));
         }
         return cards;
     }
