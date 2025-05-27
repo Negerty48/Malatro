@@ -1,7 +1,10 @@
+using System;
+using TMPro;
 using UnityEngine;
 
 public class MenuManager : MonoBehaviour
 {
+    [SerializeField] private GameManager gameManager;
     [SerializeField] private GameObject canvas;
     [SerializeField] private GameObject exitPanel;
 
@@ -9,6 +12,13 @@ public class MenuManager : MonoBehaviour
     {
         gameObject.SetActive(false);
         canvas.SetActive(true);
+        gameManager.ResetPositionBlindsPanel();
+        try
+        {
+            gameManager.blind = "Small";
+            gameManager.SetRoundScoreAt0();
+            gameManager.scoreBoard.transform.Find("RoundInfo/Bank/Money").GetComponent<TextMeshProUGUI>().text = "4";
+        } catch (NullReferenceException){}
     }
 
     public void Menu()

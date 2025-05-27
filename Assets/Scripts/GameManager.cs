@@ -8,32 +8,30 @@ public class GameManager : MonoBehaviour
 {
     [SerializeField] private Canvas blinds;
     [SerializeField] private GameObject handContainer;
-    [SerializeField] private GameObject scoreBoard;
+    [SerializeField] public GameObject scoreBoard;
     [SerializeField] private GameObject playedConatainer;
     [SerializeField] private CardsManager cardsManager;
+    [SerializeField] private GameObject winPanel;
     [SerializeField] private GameObject gameOverPanel;
     [SerializeField] private GameObject canvas;
     [SerializeField] private GameObject menuManager;
     TextMeshProUGUI scoreAtLeast;
-    TextMeshProUGUI roundScore;
-    TextMeshProUGUI handPlayed;
-    TextMeshProUGUI chipsCount;
-    TextMeshProUGUI multiCount;
+    [HideInInspector] public TextMeshProUGUI roundScore;
+    [HideInInspector] public TextMeshProUGUI handPlayed;
+    [HideInInspector] public TextMeshProUGUI chipsCount;
+    [HideInInspector] public TextMeshProUGUI multiCount;
     TextMeshProUGUI handCountText;
     TextMeshProUGUI discardCountText;
     TextMeshProUGUI roundText;
     private Dictionary<string, int> handChips = new Dictionary<string, int>();
-    private string blind = "Small";
-    private int round = 0;
+    [HideInInspector]public string blind = "Small";
+    private int round = 1;
     private int handCount;
+    private int maxScore = int.MinValue;
+
     void Start()
     {
-        RectTransform panel = blinds.transform.Find(blind).gameObject.GetComponent<RectTransform>();
-        panel.Find("Panel").gameObject.SetActive(false);
-        Vector2 pos = panel.offsetMax;
-        pos.y = -200;
-        panel.offsetMax = pos;
-
+        SetFirstBlind();
         SetDictionary(handChips);
 
         scoreAtLeast = scoreBoard.gameObject.transform.Find("ScoreAtLeast/BlindInfo/ScoreAtLeast/Score").GetComponent<TextMeshProUGUI>();
@@ -45,121 +43,194 @@ public class GameManager : MonoBehaviour
         discardCountText = scoreBoard.transform.Find("RoundInfo/Discards/Number").GetComponent<TextMeshProUGUI>();
         handCount = int.Parse(handCountText.text);
         roundText = scoreBoard.transform.Find("RoundInfo/Round/Number").GetComponent<TextMeshProUGUI>();
-    }        
+    }
 
     public void Play()
-    {        
-        if (handCount > 1)
+    {
+        if (cardsManager.SelectedCards.Count > 0)
         {
-            cardsManager.PlaySelectedCards();
-            List<GameObject> playedCards = GetCardsPlayed(cardsManager.playedContainer);
-            List<CardParser> cards = GetCardsParsed(playedCards);
-
-            string hand = HandEvaluator(cards);
-            handPlayed.text = hand.ToUpper();
-
-            SetChipsAndMulti(hand, chipsCount, multiCount, cards);
-
-            handCount--;
-            handCountText.text = handCount.ToString();
-
-            SetRoundScore(roundScore, chipsCount, multiCount);            
-            foreach (GameObject card in playedCards)
+            if (handCount > 1)
             {
-                Destroy(card);
-            }
+                cardsManager.PlaySelectedCards();
+                List<GameObject> playedCards = GetCardsPlayed(cardsManager.playedContainer);
+                List<CardParser> cards = GetCardsParsed(playedCards);
 
-            if (int.Parse(roundScore.text) >= int.Parse(scoreAtLeast.text))
-            {
-                NextBlind();
-                return;
-            }
+                string hand = HandEvaluator(cards);
+                handPlayed.text = hand.ToUpper();
 
-            cardsManager.DrawCards(cards.Count);
-        } else
-        {
-            cardsManager.PlaySelectedCards();
-            List<GameObject> playedCards = GetCardsPlayed(cardsManager.playedContainer);
-            List<CardParser> cards = GetCardsParsed(playedCards);
+                SetChipsAndMulti(hand, chipsCount, multiCount, cards);
 
-            string hand = HandEvaluator(cards);
-            handPlayed.text = hand.ToUpper();
+                handCount--;
+                handCountText.text = handCount.ToString();
 
-            SetChipsAndMulti(hand, chipsCount, multiCount, cards);
+                int score = SetRoundScore(roundScore, chipsCount, multiCount);
+                foreach (GameObject card in playedCards)
+                {
+                    Destroy(card);
+                }
 
-            handCount--;
-            handCountText.text = handCount.ToString();
-
-            SetRoundScore(roundScore, chipsCount, multiCount);
-            foreach (GameObject card in playedCards)
-            {
-                Destroy(card);
-            }
-
-            if (int.Parse(roundScore.text) >= int.Parse(scoreAtLeast.text))
-            {
-                NextBlind();
+                if (int.Parse(roundScore.text) >= int.Parse(scoreAtLeast.text))
+                {
+                    if (blind.Equals("Boss"))
+                    {
+                        if (score >= maxScore)
+                        {
+                            maxScore = score;
+                        }
+                        Win();
+                    }
+                    else
+                    {
+                        if (score >= maxScore)
+                        {
+                            maxScore = score;
+                        }
+                        NextBlind();
+                    }
+                }
+                else
+                {
+                    cardsManager.DrawCards(cards.Count);
+                }
             }
             else
             {
-                GameOver();
-            }            
+                cardsManager.PlaySelectedCards();
+                List<GameObject> playedCards = GetCardsPlayed(cardsManager.playedContainer);
+                List<CardParser> cards = GetCardsParsed(playedCards);
+
+                string hand = HandEvaluator(cards);
+                handPlayed.text = hand.ToUpper();
+
+                SetChipsAndMulti(hand, chipsCount, multiCount, cards);
+
+                handCount--;
+                handCountText.text = handCount.ToString();
+
+                int score = SetRoundScore(roundScore, chipsCount, multiCount);
+                foreach (GameObject card in playedCards)
+                {
+                    Destroy(card);
+                }
+
+                if (int.Parse(roundScore.text) >= int.Parse(scoreAtLeast.text))
+                {
+                    if (blind.Equals("Boss"))
+                    {
+                        if (score >= maxScore)
+                        {
+                            maxScore = score;
+                        }
+                        Win();
+                    }
+                    else
+                    {
+                        if (score >= maxScore)
+                        {
+                            maxScore = score;
+                        }
+                        NextBlind();
+                    }
+                }
+                else
+                {
+                    if (score >= maxScore)
+                    {
+                        maxScore = score;
+                    }
+                    GameOver();
+                }
+            }
         }
     }
 
-    public void NextBlind()
+    private void NextBlind()
     {        
         ResetForPlay();
         cardsManager.SetDeck();
         cardsManager.DeleteCards();
-        handContainer.SetActive(false);        
+        handContainer.SetActive(false);
+        handCountText = scoreBoard.transform.Find("RoundInfo/Hands/Number").GetComponent<TextMeshProUGUI>();
+        handCount = int.Parse(handCountText.text);
+        ChangePositionBlindsPanel();
         blinds.gameObject.SetActive(true);        
     }
 
-    public void GameOver()
+    private void Win()
     {
         ResetForPlay();
         cardsManager.SetDeck();
         cardsManager.DeleteCards();
         handContainer.SetActive(false);
         blinds.gameObject.SetActive(false);
+
+        TextMeshProUGUI roundPanel = winPanel.transform.Find("Round/Number").GetComponent<TextMeshProUGUI>();
+        TextMeshProUGUI score = winPanel.transform.Find("Score/Number").GetComponent<TextMeshProUGUI>();
+
+        roundPanel.text = round.ToString();
+        score.text = maxScore.ToString();
+        winPanel.SetActive(true);
+    }
+
+    private void GameOver()
+    {
+        ResetForPlay();
+        cardsManager.SetDeck();
+        cardsManager.DeleteCards();
+        handContainer.SetActive(false);
+        blinds.gameObject.SetActive(false);
+        TextMeshProUGUI roundPanel = gameOverPanel.transform.Find("Round/Number").GetComponent<TextMeshProUGUI>();
+        TextMeshProUGUI score = gameOverPanel.transform.Find("Score/Number").GetComponent<TextMeshProUGUI>();
+
+        roundPanel.text = round.ToString();
+        score.text = maxScore.ToString();
         gameOverPanel.SetActive(true);
     }
 
-    public void PlayAgain()
+    public void PlayAgain(GameObject panel)
     {
-        gameOverPanel.SetActive(false);
+        panel.SetActive(false);
+        ResetPositionBlindsPanel();
+        blind = "Small";      
+        SetFirstBlind();
+        SetRoundScoreAt0();
+        roundText.text = "";
+        round = 1;
+        handCountText = scoreBoard.transform.Find("RoundInfo/Hands/Number").GetComponent<TextMeshProUGUI>();
+        handCount = int.Parse(handCountText.text);
+        TextMeshProUGUI moneyText = scoreBoard.transform.Find("RoundInfo/Bank/Money").GetComponent<TextMeshProUGUI>();
+        moneyText.text = "4";
+        maxScore = int.MinValue;
         blinds.gameObject.SetActive(true);
     }
 
-    public void ExitToMenu()
+    public void ExitToMenu(GameObject panel)
     {
-        gameOverPanel.SetActive(false);
+        panel.SetActive(false);
         blinds.gameObject.SetActive(true);
         canvas.SetActive(false);
         menuManager.SetActive(true);
     }
 
-    public void ResetForPlay()
+    private void ResetForPlay()
     {
-        roundScore.text = "";
-        handPlayed.text = "";
-        chipsCount.text = "";
-        multiCount.text = "";
         handCountText.text = "4";
         discardCountText.text = "3";
 
         RectTransform scoreAtLeast = scoreBoard.gameObject.transform.Find("ScoreAtLeast").GetComponent<RectTransform>();
         TextMeshProUGUI blindText = scoreAtLeast.transform.Find("BlindText/Text").GetComponent<TextMeshProUGUI>();
-        UnityEngine.UI.Image blindImage = scoreAtLeast.gameObject.transform.Find("BlindInfo/Chip").GetComponent<UnityEngine.UI.Image>();
+        Image blindImage = scoreAtLeast.gameObject.transform.Find("BlindInfo/Chip").GetComponent<Image>();
         TextMeshProUGUI blindScore = scoreAtLeast.gameObject.transform.Find("BlindInfo/ScoreAtLeast/Score").GetComponent<TextMeshProUGUI>();
         TextMeshProUGUI blindReward = scoreAtLeast.gameObject.transform.Find("BlindInfo/ScoreAtLeast/Reward").GetComponent<TextMeshProUGUI>();
         TextMeshProUGUI blindTextReward = scoreAtLeast.gameObject.transform.Find("BlindInfo/ScoreAtLeast/TextReward").GetComponent<TextMeshProUGUI>();
-        UnityEngine.UI.Image blindChipScore = scoreAtLeast.gameObject.transform.Find("BlindInfo/ScoreAtLeast/Chip").GetComponent<UnityEngine.UI.Image>();
-        TextMeshProUGUI reward = scoreBoard.transform.Find("RoundInfo/Bank/Money").GetComponent<TextMeshProUGUI>();
-        if (blindReward)
+        Image blindChipScore = scoreAtLeast.gameObject.transform.Find("BlindInfo/ScoreAtLeast/Chip").GetComponent<Image>();
+        TextMeshProUGUI moneyText = scoreBoard.transform.Find("RoundInfo/Bank/Money").GetComponent<TextMeshProUGUI>();
+        int money = int.Parse(moneyText.text);
+        if (!blindReward.Equals(""))
         {
-            reward.text = blindReward.text;
+            int.TryParse(blindReward.text.Replace("$", ""), out int reward);
+            money += reward;
+            moneyText.text = money.ToString();
         }
         blindText.text = "";
         blindImage.sprite = null;
@@ -169,29 +240,30 @@ public class GameManager : MonoBehaviour
         blindTextReward.gameObject.SetActive(false);
         blindChipScore.gameObject.SetActive(false);
 
-        round++;
-        roundText.text = round.ToString();
+        if (!blind.Equals("Boss"))
+        {
+            round++;
+            roundText.text = round.ToString();
+        }
     }
 
     public void Discard()
     {
         List<GameObject> cards = cardsManager.SelectedCards;
         TextMeshProUGUI discardsCountText = scoreBoard.transform.Find("RoundInfo/Discards/Number").GetComponent<TextMeshProUGUI>();
-        int.TryParse(discardsCountText.text, out int dicardsCount);
+        int discardsCount = int.Parse(discardsCountText.text);
 
-        if (dicardsCount > 0 && handContainer.transform.childCount < 9)
+        if (discardsCount > 0 && cards.Count > 0)
         {
-            dicardsCount--;
-            discardsCountText.text = dicardsCount.ToString();
-            foreach (GameObject card in cards)
-            {
-                Destroy(card);
-            }
+            discardsCount--;
+            discardsCountText.text = discardsCount.ToString();
             cardsManager.DrawCards(cards.Count);
+            cardsManager.DicardCards();                        
+            cardsManager.SelectedCards.Clear();
         }
     }
 
-    public void SetDictionary(Dictionary<string, int> handChips)
+    private void SetDictionary(Dictionary<string, int> handChips)
     {
         handChips.Add("Carta Alta", 5);        
         handChips.Add("Pareja", 10);        
@@ -204,7 +276,7 @@ public class GameManager : MonoBehaviour
         handChips.Add("Escalera De Color", 100);        
     }
 
-    public void SetRoundScore(TextMeshProUGUI roundScoreTxt, TextMeshProUGUI chipsCount, TextMeshProUGUI multiCount)
+    private int SetRoundScore(TextMeshProUGUI roundScoreTxt, TextMeshProUGUI chipsCount, TextMeshProUGUI multiCount)
     {
         int.TryParse(chipsCount.text, out int chips);
         int.TryParse(multiCount.text, out int multi);
@@ -213,9 +285,10 @@ public class GameManager : MonoBehaviour
         int handChips = chips * multi;
         roundScore += handChips;
         roundScoreTxt.text = roundScore.ToString();
+        return roundScore;
     }
 
-    public void SetChipsAndMulti(string hand, TextMeshProUGUI chipsCount, TextMeshProUGUI multiCount, List<CardParser> cards)
+    private void SetChipsAndMulti(string hand, TextMeshProUGUI chipsCount, TextMeshProUGUI multiCount, List<CardParser> cards)
     {
         int.TryParse(chipsCount.text, out int chips);
 
@@ -280,7 +353,7 @@ public class GameManager : MonoBehaviour
         return pairs.Sum(c => c.Value);
     }
 
-    public List<GameObject> GetCardsPlayed(Transform playedCards)
+    private List<GameObject> GetCardsPlayed(Transform playedCards)
     {
         List<GameObject> childs = new List<GameObject>();
         Transform parent = playedCards.transform;
@@ -291,7 +364,7 @@ public class GameManager : MonoBehaviour
         return childs;
     }
 
-    public string HandEvaluator(List<CardParser> cards)
+    private string HandEvaluator(List<CardParser> cards)
     {
         bool color;
         bool escalera;
@@ -314,9 +387,9 @@ public class GameManager : MonoBehaviour
         {
             return CheckValues(cards);
         }
-    }    
+    }
 
-    public string CheckValues(List<CardParser> cards)
+    private string CheckValues(List<CardParser> cards)
     {
         var valueCounts = cards
         .GroupBy(c => c.Value)
@@ -333,28 +406,32 @@ public class GameManager : MonoBehaviour
         return "Carta Alta";
     }
 
-    public bool CheckEscalera(List<CardParser> cards)
+    private bool CheckEscalera(List<CardParser> cards)
     {
         List<int> values = cards.Select(c => c.Value).OrderBy(v => v).ToList();
-
-        bool isAceLowStraight = values.Contains(14) &&
+        
+        if (values.Count == 5)
+        {
+            bool isAceLowStraight = values.Contains(14) &&
                                 values.Contains(2) &&
                                 values.Contains(3) &&
                                 values.Contains(4) &&
                                 values.Contains(5);
 
-        if (isAceLowStraight)
-            return true;
-        
-        for (int i = 1; i < values.Count; i++)
-        {
-            if (values[i] != values[i - 1] + 1)
-                return false;
-        }
+            if (isAceLowStraight)
+                return true;
+
+            for (int i = 1; i < values.Count; i++)
+            {
+                if (values[i] != values[i - 1] + 1)
+                    return false;
+            }
+        } else return false;
+
         return true;
     }
 
-    public bool CheckColor(List<CardParser> cards)
+    private bool CheckColor(List<CardParser> cards)
     {      
         string suit = "";
         if (cards.Count == 5) {
@@ -372,7 +449,7 @@ public class GameManager : MonoBehaviour
         return true;
     }
 
-    public List<CardParser> GetCardsParsed(List<GameObject> selectedCards)
+    private List<CardParser> GetCardsParsed(List<GameObject> selectedCards)
     {
         List<CardParser> cards = new();
         int value;
@@ -409,13 +486,15 @@ public class GameManager : MonoBehaviour
     }
 
     public void SelectBlind()
-    {        
+    {
+        SetRoundScoreAt0();
+        TextMeshProUGUI roundText = scoreBoard.transform.Find("RoundInfo/Round/Number").GetComponent<TextMeshProUGUI>();
+        roundText.text = round.ToString();
         SetScoreAtLeast();
-        ChangePositionBlindsPanel();
         blinds.gameObject.SetActive(false);
         handContainer.SetActive(true);        
         cardsManager.DrawCards(9);
-    }    
+    }
 
     private void ChangePositionBlindsPanel()
     {
@@ -423,13 +502,35 @@ public class GameManager : MonoBehaviour
         actual.Find("Panel").gameObject.SetActive(true);
         Vector2 posActual = actual.offsetMax;
         posActual.y = -300;
-        actual.offsetMax = posActual;        
+        actual.offsetMax = posActual;
+        ChangeBlind();
         RectTransform posterior = blinds.gameObject.transform.Find(blind).GetComponent<RectTransform>();
         posterior.Find("Panel").gameObject.SetActive(false);
         Vector2 posPosterior = posterior.offsetMax;
         posPosterior.y = -200;
-        posterior.offsetMax = posPosterior;
-        ChangeBlind();
+        posterior.offsetMax = posPosterior;        
+    }
+
+    private void SetFirstBlind()
+    {
+        RectTransform panel = blinds.transform.Find(blind).gameObject.GetComponent<RectTransform>();
+        panel.Find("Panel").gameObject.SetActive(false);
+        Vector2 pos = panel.offsetMax;
+        pos.y = -200;
+        panel.offsetMax = pos;
+    }
+
+    public void ResetPositionBlindsPanel()
+    {
+        List<string> blindsName = new List<string>{"Small", "Big", "Boss"};
+        foreach (string blind in blindsName) 
+        {
+            RectTransform actual = blinds.gameObject.transform.Find(blind).GetComponent<RectTransform>();
+            actual.Find("Panel").gameObject.SetActive(true);
+            Vector2 posActual = actual.offsetMax;
+            posActual.y = -300;
+            actual.offsetMax = posActual;
+        }
     }
 
     private void ChangeBlind()
@@ -452,14 +553,14 @@ public class GameManager : MonoBehaviour
     {
         RectTransform scoreAtLeast = scoreBoard.gameObject.transform.Find("ScoreAtLeast").GetComponent<RectTransform>();
         TextMeshProUGUI blindText = scoreAtLeast.transform.Find("BlindText/Text").GetComponent<TextMeshProUGUI>();        
-        UnityEngine.UI.Image blindImage = scoreAtLeast.gameObject.transform.Find("BlindInfo/Chip").GetComponent<UnityEngine.UI.Image>();
+        Image blindImage = scoreAtLeast.gameObject.transform.Find("BlindInfo/Chip").GetComponent<Image>();
         TextMeshProUGUI blindScore = scoreAtLeast.gameObject.transform.Find("BlindInfo/ScoreAtLeast/Score").GetComponent<TextMeshProUGUI>();
         TextMeshProUGUI blindReward = scoreAtLeast.gameObject.transform.Find("BlindInfo/ScoreAtLeast/Reward").GetComponent<TextMeshProUGUI>();
         TextMeshProUGUI blindTextReward = scoreAtLeast.gameObject.transform.Find("BlindInfo/ScoreAtLeast/TextReward").GetComponent<TextMeshProUGUI>();
-        UnityEngine.UI.Image blindChipScore = scoreAtLeast.gameObject.transform.Find("BlindInfo/ScoreAtLeast/Chip").GetComponent<UnityEngine.UI.Image>();
+        Image blindChipScore = scoreAtLeast.gameObject.transform.Find("BlindInfo/ScoreAtLeast/Chip").GetComponent<Image>();
 
         RectTransform actual = blinds.gameObject.transform.Find(blind).GetComponent<RectTransform>();
-        UnityEngine.UI.Image actualImage = actual.gameObject.transform.Find("Chip").GetComponent<UnityEngine.UI.Image>();
+        Image actualImage = actual.gameObject.transform.Find("Chip").GetComponent<Image>();
         TextMeshProUGUI actualScore = actual.gameObject.transform.Find("ScoreAtLeast/Score").GetComponent<TextMeshProUGUI>();
         TextMeshProUGUI actualReward = actual.gameObject.transform.Find("ScoreAtLeast/Reward").GetComponent<TextMeshProUGUI>();
         
@@ -503,5 +604,16 @@ public class GameManager : MonoBehaviour
                 blindReward.text = actualReward.text;
             }
         }
+    }
+
+    public void SetRoundScoreAt0()
+    {
+        round = 1;
+        SetFirstBlind();
+        roundScore.text = "";
+        handPlayed.text = "";
+        chipsCount.text = "";
+        multiCount.text = "";
+        roundText.text = "";
     }
 }

@@ -53,4 +53,16 @@ public class CardsManager : MonoBehaviour
             Destroy(child.gameObject);
         }
     }
+
+    public void DicardCards()
+    {
+        if (SelectedCards.Count == 0)
+            return;
+
+        foreach (GameObject card in new List<GameObject>(SelectedCards))
+        {
+            card.GetComponent<Card>().Deselect();
+            Destroy(card);
+        }                
+    }
 }
