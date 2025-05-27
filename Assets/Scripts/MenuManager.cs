@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class MenuManager : MonoBehaviour
 {
+    [SerializeField] private DBManager dbManager;
     [SerializeField] private GameManager gameManager;
     [SerializeField] private GameObject canvas;
     [SerializeField] private GameObject exitPanel;
@@ -23,7 +24,7 @@ public class MenuManager : MonoBehaviour
 
     public void Menu()
     {
-
+        dbManager.GetGames(); 
     }
 
     public void ShowExitPanel()

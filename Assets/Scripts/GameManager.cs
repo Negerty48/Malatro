@@ -6,6 +6,7 @@ using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
+    [SerializeField] private DBManager dbManager;
     [SerializeField] private Canvas blinds;
     [SerializeField] private GameObject handContainer;
     [SerializeField] public GameObject scoreBoard;
@@ -169,6 +170,7 @@ public class GameManager : MonoBehaviour
 
         roundPanel.text = round.ToString();
         score.text = maxScore.ToString();
+        dbManager.SaveGameResult(round, maxScore, "Victoria");
         winPanel.SetActive(true);
     }
 
@@ -184,6 +186,7 @@ public class GameManager : MonoBehaviour
 
         roundPanel.text = round.ToString();
         score.text = maxScore.ToString();
+        dbManager.SaveGameResult(round, maxScore, "Derrota");
         gameOverPanel.SetActive(true);
     }
 
