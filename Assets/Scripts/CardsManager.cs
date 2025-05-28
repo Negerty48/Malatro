@@ -48,7 +48,7 @@ public class CardsManager : MonoBehaviour
 
     public void DeleteCards()
     {
-        foreach (Transform child in handContainer.transform)
+        foreach (Transform child in handContainer)
         {
             Destroy(child.gameObject);
         }

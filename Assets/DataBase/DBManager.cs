@@ -1,6 +1,7 @@
 using System.IO;
 using SQLite;
 using UnityEngine;
+using System.Collections.Generic;
 
 public class DBManager : MonoBehaviour
 {
@@ -26,14 +27,18 @@ public class DBManager : MonoBehaviour
         connection.Close();        
     }
 
-    public void GetGames()
+    public List<GameResult> GetGames()
     {
+        List<GameResult> games = new List<GameResult>();
+
         SQLiteConnection connection = new SQLiteConnection(dbPath);
         var results = connection.Table<GameResult>().ToList();
         foreach (var result in results)
         {
-            Debug.Log($"ID: {result.Id}, Ronda: {result.Round}, Puntos: {result.Score}, Resultado: {result.Result}");
+            games.Add(result);
         }
         connection.Close();
+
+        return games;
     }
 }
