@@ -2,7 +2,7 @@
  Proyecto inspirado en Balatro — creado solo con fines educativos y sin ningún propósito comercial o de lucro. Todos los assets y el código son originales.
  
 ## 📥 Descargar 
-[📦 Descargar para Linux]()
+[📦 Descargar para Linux](https://github.com/Negerty48/Malatro/releases/download/Linux/LinuxExec.zip)
 [📦 Descargar para Windows](https://github.com/Negerty48/Malatro/releases/download/Windows/WindowsExec.zip)
 
 > ✅ Descomprime el archivo y ejecuta el fichero correspondiente (`.x86_64` en Linux, `.exe` en Windows).  
