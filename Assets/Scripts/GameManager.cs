@@ -12,8 +12,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] public GameObject scoreBoard;
     [SerializeField] private GameObject playedConatainer;
     [SerializeField] private CardsManager cardsManager;
-    [SerializeField] private GameObject winPanel;
-    [SerializeField] private GameObject gameOverPanel;
+    [SerializeField] private GameObject winOrGameOverPanel;
     [SerializeField] private GameObject canvas;
     [SerializeField] private GameObject menuManager;
     TextMeshProUGUI scoreAtLeast;
@@ -78,7 +77,7 @@ public class GameManager : MonoBehaviour
                         {
                             maxScore = score;
                         }
-                        Win();
+                        Finish("Victoria");
                     }
                     else
                     {
@@ -122,7 +121,7 @@ public class GameManager : MonoBehaviour
                         {
                             maxScore = score;
                         }
-                        Win();
+                        Finish("Victoria");
                     }
                     else
                     {
@@ -139,14 +138,14 @@ public class GameManager : MonoBehaviour
                     {
                         maxScore = score;
                     }
-                    GameOver();
+                    Finish("Derrota");
                 }
             }
         }
     }
 
     private void NextBlind()
-    {        
+    {
         ResetForPlay();
         cardsManager.SetDeck();
         cardsManager.DeleteCards();
@@ -157,37 +156,35 @@ public class GameManager : MonoBehaviour
         blinds.gameObject.SetActive(true);        
     }
 
-    private void Win()
+    private void Finish(string result)
     {
-        ResetForPlay();
-        cardsManager.SetDeck();
-        cardsManager.DeleteCards();
-        handContainer.SetActive(false);
-        blinds.gameObject.SetActive(false);
+        TextMeshProUGUI text = winOrGameOverPanel.transform.Find("Text").GetComponent<TextMeshProUGUI>();
+        TextMeshProUGUI roundPanel = winOrGameOverPanel.transform.Find("Round/Number").GetComponent<TextMeshProUGUI>();
+        TextMeshProUGUI score = winOrGameOverPanel.transform.Find("Score/Number").GetComponent<TextMeshProUGUI>();
 
-        TextMeshProUGUI roundPanel = winPanel.transform.Find("Round/Number").GetComponent<TextMeshProUGUI>();
-        TextMeshProUGUI score = winPanel.transform.Find("Score/Number").GetComponent<TextMeshProUGUI>();
-
+        if (result.Equals("Victoria"))
+        {
+            text.text = "HAS GANADO";
+        }
+        else
+        {
+            text.text = "HAS PERDIDO";
+        }        
+        text.color = new Color32(0x16, 0xAE, 0x00, 0xFF);
         roundPanel.text = round.ToString();
         score.text = maxScore.ToString();
         dbManager.SaveGameResult(round, maxScore, "Victoria");
-        winPanel.SetActive(true);
-    }
 
-    private void GameOver()
-    {
         ResetForPlay();
+        SetRoundScoreAt0();
+        roundText.text = "";
+        round = 1;
         cardsManager.SetDeck();
         cardsManager.DeleteCards();
         handContainer.SetActive(false);
         blinds.gameObject.SetActive(false);
-        TextMeshProUGUI roundPanel = gameOverPanel.transform.Find("Round/Number").GetComponent<TextMeshProUGUI>();
-        TextMeshProUGUI score = gameOverPanel.transform.Find("Score/Number").GetComponent<TextMeshProUGUI>();
 
-        roundPanel.text = round.ToString();
-        score.text = maxScore.ToString();
-        dbManager.SaveGameResult(round, maxScore, "Derrota");
-        gameOverPanel.SetActive(true);
+        winOrGameOverPanel.SetActive(true);
     }
 
     public void PlayAgain(GameObject panel)
@@ -195,10 +192,7 @@ public class GameManager : MonoBehaviour
         panel.SetActive(false);
         ResetPositionBlindsPanel();
         blind = "Small";      
-        SetFirstBlind();
-        SetRoundScoreAt0();
-        roundText.text = "";
-        round = 1;
+        SetFirstBlind();        
         handCountText = scoreBoard.transform.Find("RoundInfo/Hands/Number").GetComponent<TextMeshProUGUI>();
         handCount = int.Parse(handCountText.text);
         TextMeshProUGUI moneyText = scoreBoard.transform.Find("RoundInfo/Bank/Money").GetComponent<TextMeshProUGUI>();
@@ -215,7 +209,7 @@ public class GameManager : MonoBehaviour
         menuManager.SetActive(true);
     }
 
-    private void ResetForPlay()
+    public void ResetForPlay()
     {
         handCountText.text = "4";
         discardCountText.text = "3";
@@ -490,13 +484,17 @@ public class GameManager : MonoBehaviour
 
     public void SelectBlind()
     {
-        SetRoundScoreAt0();
         TextMeshProUGUI roundText = scoreBoard.transform.Find("RoundInfo/Round/Number").GetComponent<TextMeshProUGUI>();
         roundText.text = round.ToString();
         SetScoreAtLeast();
         blinds.gameObject.SetActive(false);
         handContainer.SetActive(true);        
         cardsManager.DrawCards(9);
+
+        roundScore.text = "";
+        handPlayed.text = "";
+        chipsCount.text = "";
+        multiCount.text = "";
     }
 
     private void ChangePositionBlindsPanel()
@@ -611,7 +609,6 @@ public class GameManager : MonoBehaviour
 
     public void SetRoundScoreAt0()
     {
-        round = 1;
         SetFirstBlind();
         roundScore.text = "";
         handPlayed.text = "";

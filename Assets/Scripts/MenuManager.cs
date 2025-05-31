@@ -21,7 +21,7 @@ public class MenuManager : MonoBehaviour
         try
         {
             gameManager.blind = "Small";
-            gameManager.SetRoundScoreAt0();
+            gameManager.ResetForPlay();
             gameManager.scoreBoard.transform.Find("RoundInfo/Bank/Money").GetComponent<TextMeshProUGUI>().text = "4";
         } catch (NullReferenceException){}
     }
