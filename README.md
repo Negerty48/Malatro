@@ -1,9 +1,9 @@
-# 🃏 SpaceInvaders
+# 🃏 Malatro
  Proyecto inspirado en Balatro — creado solo con fines educativos y sin ningún propósito comercial o de lucro. Todos los assets y el código son originales.
  
 ## 📥 Descargar 
 [📦 Descargar para Linux]()
-[📦 Descargar para Windows]()
+[📦 Descargar para Windows](https://github.com/Negerty48/Malatro/releases/tag/Windows)
 
 > ✅ Descomprime el archivo y ejecuta el fichero correspondiente (`.x86_64` en Linux, `.exe` en Windows).  
 > 🔐 En Linux necesitarás darle permisos de ejecución  
