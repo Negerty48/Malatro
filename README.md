@@ -3,7 +3,7 @@
  
 ## 📥 Descargar 
 [📦 Descargar para Linux]()
-[📦 Descargar para Windows](https://github.com/Negerty48/Malatro/releases/tag/Windows)
+[📦 Descargar para Windows](https://github.com/Negerty48/Malatro/releases/download/Windows/WindowsExec.zip)
 
 > ✅ Descomprime el archivo y ejecuta el fichero correspondiente (`.x86_64` en Linux, `.exe` en Windows).  
 > 🔐 En Linux necesitarás darle permisos de ejecución  
